@@ -5,12 +5,15 @@ import { ShoppingCart, MapPin, Menu, X, User, ShieldCheck } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useCartStore } from '@/store/useCartStore'
+import { supabase } from '@/lib/supabase'
 import Logo from './Logo'
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false)
     const [scrolled, setScrolled] = useState(false)
     const [isStandalone, setIsStandalone] = useState(false)
+    const [userRole, setUserRole] = useState<string | null>(null)
+    const [session, setSession] = useState<any>(null)
     const pathname = usePathname()
     const { items, toggleCart } = useCartStore()
 
@@ -18,6 +21,26 @@ export default function Navbar() {
     const [isCartAnimating, setIsCartAnimating] = useState(false)
 
     useEffect(() => {
+        const checkUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            setSession(session)
+            if (session) {
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
+                if (profile) setUserRole(profile.role)
+            }
+        }
+        checkUser()
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session)
+            if (session) {
+                supabase.from('profiles').select('role').eq('id', session.user.id).single()
+                    .then(({ data }) => { if (data) setUserRole(data.role) })
+            } else {
+                setUserRole(null)
+            }
+        })
+
         const handleScroll = () => setScrolled(window.scrollY > 20)
         window.addEventListener('scroll', handleScroll)
 
@@ -26,7 +49,10 @@ export default function Navbar() {
             setIsStandalone(true)
         }
 
-        return () => window.removeEventListener('scroll', handleScroll)
+        return () => {
+            window.removeEventListener('scroll', handleScroll)
+            subscription.unsubscribe()
+        }
     }, [])
 
     useEffect(() => {
@@ -98,7 +124,10 @@ export default function Navbar() {
 
 
                         {!isStandalone && (
-                            <Link href="/admin" className="w-12 h-12 hidden md:flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl text-slate-400 hover:text-white transition-all active:scale-90">
+                            <Link
+                                href={!session ? '/login' : (userRole === 'admin' || userRole === 'cajero' ? '/admin' : '/perfil')}
+                                className="w-12 h-12 hidden md:flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl text-slate-400 hover:text-white transition-all active:scale-90"
+                            >
                                 <User className="w-5 h-5" />
                             </Link>
                         )}
@@ -142,12 +171,12 @@ export default function Navbar() {
                         </Link>
                         {!isStandalone && (
                             <Link
-                                href="/admin"
+                                href={!session ? '/login' : (userRole === 'admin' || userRole === 'cajero' ? '/admin' : '/perfil')}
                                 onClick={() => setIsOpen(false)}
                                 className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest bg-slate-900 text-white py-4 rounded-2xl border border-white/5"
                             >
-                                <ShieldCheck className="w-4 h-4" />
-                                Personal
+                                <User className="w-4 h-4" />
+                                {!session ? 'Ingresar' : 'Mi Perfil'}
                             </Link>
                         )}
                     </div>

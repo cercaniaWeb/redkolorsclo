@@ -19,30 +19,35 @@ export default function ProfilePage() {
 
     useEffect(() => {
         const fetchUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) {
+            try {
+                const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+                if (authError || !user) {
+                    router.push('/login')
+                    return
+                }
+
+                setUser(user)
+
+                const [profRes, ordersRes] = await Promise.all([
+                    supabase.from('profiles').select('*').eq('id', user.id).single(),
+                    supabase.from('online_orders').select('*, online_order_items(*)').eq('user_id', user.id).order('created_at', { ascending: false })
+                ])
+
+                if (profRes.data) {
+                    setProfile(profRes.data)
+                    setFavoriteBranch(profRes.data.favorite_branch || 'ninguna')
+                }
+
+                if (ordersRes.data) {
+                    setOrders(ordersRes.data)
+                }
+            } catch (err) {
+                console.error('Error fetching user data:', err)
                 router.push('/login')
-                return
+            } finally {
+                setLoading(false)
             }
-
-            const { user } = session
-            setUser(user)
-
-            const [profRes, ordersRes] = await Promise.all([
-                supabase.from('profiles').select('*').eq('id', user.id).single(),
-                supabase.from('online_orders').select('*, online_order_items(*)').eq('user_id', user.id).order('created_at', { ascending: false })
-            ])
-
-            if (profRes.data) {
-                setProfile(profRes.data)
-                setFavoriteBranch(profRes.data.favorite_branch || 'ninguna')
-            }
-
-            if (ordersRes.data) {
-                setOrders(ordersRes.data)
-            }
-
-            setLoading(false)
         }
 
         fetchUser()

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export interface CartItem {
     id: string
@@ -20,45 +21,52 @@ interface CartStore {
     getTotal: () => number
 }
 
-export const useCartStore = create<CartStore>((set, get) => ({
-    items: [],
-    isOpen: false,
+export const useCartStore = create<CartStore>()(
+    persist(
+        (set, get) => ({
+            items: [],
+            isOpen: false,
 
-    addItem: (item) => {
-        set((state) => {
-            const existing = state.items.find((i) => i.id === item.id)
-            if (existing) {
-                return {
+            addItem: (item) => {
+                set((state) => {
+                    const existing = state.items.find((i) => i.id === item.id)
+                    if (existing) {
+                        return {
+                            items: state.items.map((i) =>
+                                i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+                            ),
+                        }
+                    }
+                    return { items: [...state.items, { ...item, quantity: 1 }], isOpen: true }
+                })
+            },
+
+            removeItem: (id) => {
+                set((state) => ({
+                    items: state.items.filter((i) => i.id !== id),
+                }))
+            },
+
+            updateQuantity: (id, quantity) => {
+                set((state) => ({
                     items: state.items.map((i) =>
-                        i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+                        i.id === id ? { ...i, quantity: Math.max(1, quantity) } : i
                     ),
-                }
-            }
-            return { items: [...state.items, { ...item, quantity: 1 }], isOpen: true }
-        })
-    },
+                }))
+            },
 
-    removeItem: (id) => {
-        set((state) => ({
-            items: state.items.filter((i) => i.id !== id),
-        }))
-    },
+            clearCart: () => set({ items: [] }),
 
-    updateQuantity: (id, quantity) => {
-        set((state) => ({
-            items: state.items.map((i) =>
-                i.id === id ? { ...i, quantity: Math.max(1, quantity) } : i
-            ),
-        }))
-    },
+            toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
 
-    clearCart: () => set({ items: [] }),
+            setIsOpen: (isOpen) => set({ isOpen }),
 
-    toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
-
-    setIsOpen: (isOpen) => set({ isOpen }),
-
-    getTotal: () => {
-        return get().items.reduce((total, item) => total + item.price * item.quantity, 0)
-    },
-}))
+            getTotal: () => {
+                return get().items.reduce((total, item) => total + item.price * item.quantity, 0)
+            },
+        }),
+        {
+            name: 'redkolors-cart',
+        }
+    )
+)

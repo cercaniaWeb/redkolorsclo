@@ -4,7 +4,7 @@ import { useCartStore } from '@/store/useCartStore'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, CreditCard, Building, MessageCircle, UploadCloud, Info, Check, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, CreditCard, Building, MessageCircle, UploadCloud, Info, Check, ShieldCheck, ShoppingBag } from 'lucide-react'
 import Logo from '../components/Logo'
 import { supabase } from '@/lib/supabase'
 
@@ -28,12 +28,14 @@ export default function CheckoutPage() {
     const [loading, setLoading] = useState(false)
     const [receiptFile, setReceiptFile] = useState<File | null>(null)
     const [success, setSuccess] = useState(false)
+    const [isHydrated, setIsHydrated] = useState(false)
 
     useEffect(() => {
-        if (items.length === 0 && !success) {
-            router.push('/')
-        }
-    }, [items, router, success])
+        // Zustand hydration check
+        const unsub = useCartStore.persist.onFinishHydration(() => setIsHydrated(true))
+        if (useCartStore.persist.hasHydrated()) setIsHydrated(true)
+        return () => unsub()
+    }, [])
 
     const handleWhatsAppOrder = () => {
         let message = "Hola, mi pedido online listo para pagar en tienda o confirmar:%0A%0A"
@@ -129,13 +131,36 @@ export default function CheckoutPage() {
             }
 
             setSuccess(true)
-            clearCart()
+            // clearCart() removed from here, now in success view button to prevent race conditions
         } catch (err) {
             console.error(err)
             alert('Ocurrió un error inesperado.')
         } finally {
             setLoading(false)
         }
+    }
+
+    if (!isHydrated) {
+        return (
+            <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-rose-500/20 border-t-rose-500 rounded-full animate-spin"></div>
+            </div>
+        )
+    }
+
+    if (isHydrated && items.length === 0 && !success) {
+        return (
+            <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-6 text-center animate-reveal">
+                <div className="w-20 h-20 bg-slate-900 rounded-full flex items-center justify-center border border-white/5 mb-6 text-slate-500">
+                    <ShoppingBag className="w-10 h-10" />
+                </div>
+                <h1 className="text-3xl font-black text-white tracking-tight mb-2">Tu carrito está vacío</h1>
+                <p className="text-slate-400 mb-8 max-w-xs mx-auto">Parece que aún no has seleccionado ninguna prenda para tu pedido.</p>
+                <Link href="/tienda" className="bg-rose-600 hover:bg-rose-500 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-xl shadow-rose-600/20 active:scale-95">
+                    Ir a la Tienda
+                </Link>
+            </div>
+        )
     }
 
     if (success) {
@@ -150,9 +175,15 @@ export default function CheckoutPage() {
                         ? 'Tu comprobante de transferencia ha sido enviado. Nuestro personal lo verificará en ventanilla y te notificaremos cuando el pago sea aprobado para despachar tus prendas.'
                         : 'Tu pago está siendo procesado por el banco. Recibirás tu confirmación de envío en tu correo próximamente.'}
                 </p>
-                <Link href="/" className="bg-rose-600 hover:bg-rose-500 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-xl shadow-rose-600/20 active:scale-95">
+                <button
+                    onClick={() => {
+                        clearCart()
+                        router.push('/')
+                    }}
+                    className="bg-rose-600 hover:bg-rose-500 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-xl shadow-rose-600/20 active:scale-95"
+                >
                     Volver a la Tienda
-                </Link>
+                </button>
             </div>
         )
     }
