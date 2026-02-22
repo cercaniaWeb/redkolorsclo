@@ -42,8 +42,9 @@ export default function Navbar() {
         { name: 'Catálogo', href: '/tienda' },
     ]
 
-    // Don't show navbar in POS or Admin
-    if (pathname === '/pos' || pathname === '/admin') return null
+    // Don't show navbar in standalone or specialized flows
+    const hiddenRoutes = ['/pos', '/admin', '/login', '/perfil', '/checkout']
+    if (hiddenRoutes.includes(pathname)) return null
 
     return (
         <header className={`fixed top-0 w-full z-50 transition-all duration-500 px-4 md:px-8 py-4 ${scrolled ? 'pt-4' : 'pt-6'}`}>

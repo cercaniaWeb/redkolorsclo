@@ -17,7 +17,7 @@ export default async function HomePage() {
         <div className="flex flex-col text-white">
             {isLive && <LiveBanner />}
             {/* HERO SECTION */}
-            <section id="inicio" className="relative min-h-[95vh] flex items-center pt-24 overflow-hidden">
+            <section id="inicio" className="relative min-h-[95vh] flex items-center pt-32 md:pt-40 overflow-hidden">
                 {/* Dynamic Background */}
                 <div className="absolute inset-0 bg-neutral-950 z-0">
                     <div className="absolute top-0 -left-4 w-96 h-96 bg-rose-600/20 rounded-full blur-[128px] animate-pulse"></div>
