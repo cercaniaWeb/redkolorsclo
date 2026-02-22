@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase'
 export default function CheckoutPage() {
     const { items, getTotal, clearCart } = useCartStore()
     const router = useRouter()
-    const [method, setMethod] = useState<'tarjeta' | 'transferencia' | 'whatsapp'>('transferencia')
+    const [method, setMethod] = useState<'tarjeta' | 'transferencia' | 'whatsapp'>('tarjeta')
     const [deliveryMethod, setDeliveryMethod] = useState<'envio' | 'tienda'>('envio')
 
     // Shipping Address State
@@ -28,6 +28,7 @@ export default function CheckoutPage() {
     const [loading, setLoading] = useState(false)
     const [receiptFile, setReceiptFile] = useState<File | null>(null)
     const [success, setSuccess] = useState(false)
+    const [showBankModal, setShowBankModal] = useState(false)
     const [isHydrated, setIsHydrated] = useState(false)
 
     useEffect(() => {
@@ -339,7 +340,17 @@ export default function CheckoutPage() {
                                             <p className="text-xs text-slate-500 mt-1">Directo a cuenta bancaria</p>
                                         </div>
                                     </div>
-                                    <input type="radio" name="payment" value="transferencia" checked={method === 'transferencia'} onChange={() => setMethod('transferencia')} className="w-5 h-5 accent-blue-500" />
+                                    <input
+                                        type="radio"
+                                        name="payment"
+                                        value="transferencia"
+                                        checked={method === 'transferencia'}
+                                        onChange={() => {
+                                            setMethod('transferencia')
+                                            setShowBankModal(true)
+                                        }}
+                                        className="w-5 h-5 accent-blue-500"
+                                    />
                                 </div>
                             </label>
 
@@ -461,6 +472,73 @@ export default function CheckoutPage() {
                     </aside>
                 </div>
             </main >
+
+            {/* Bank Details Modal */}
+            {showBankModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12">
+                    <div className="absolute inset-0 bg-[#020617]/90 backdrop-blur-md animate-fade-in" onClick={() => setShowBankModal(false)}></div>
+                    <div className="relative glass w-full max-w-xl p-8 sm:p-12 rounded-[3rem] border-white/10 shadow-3xl animate-reveal">
+                        <button
+                            onClick={() => setShowBankModal(false)}
+                            className="absolute top-8 right-8 p-3 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                        </button>
+
+                        <div className="space-y-8">
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-blue-600/10 rounded-3xl flex items-center justify-center border border-blue-500/20 text-blue-500 shadow-xl shadow-blue-500/10">
+                                    <Building className="w-8 h-8" />
+                                </div>
+                                <div>
+                                    <h2 className="text-3xl font-black text-white tracking-tight">Datos Bancarios</h2>
+                                    <p className="text-slate-400 font-medium">Realiza tu transferencia SPEI</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-900/50 rounded-[2rem] border border-white/5 overflow-hidden">
+                                <div className="p-8 space-y-6">
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Banco</p>
+                                        <p className="text-xl font-bold text-white">BBVA México</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Titular</p>
+                                        <p className="text-xl font-bold text-white">Red Kolors S.A. de C.V.</p>
+                                    </div>
+                                    <div className="group relative space-y-1 cursor-pointer">
+                                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">CLABE Interbancaria</p>
+                                        <p className="text-2xl font-black text-blue-400 tracking-tighter">0121 8000 1234 5678 90</p>
+                                        <div className="absolute right-0 bottom-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <span className="text-[10px] bg-blue-500 text-white px-2 py-1 rounded">Click para copiar</span>
+                                        </div>
+                                    </div>
+                                    <div className="pt-6 border-t border-white/5">
+                                        <div className="flex justify-between items-center bg-blue-600/10 p-4 rounded-2xl border border-blue-500/20">
+                                            <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">Total a transferir</span>
+                                            <span className="text-2xl font-black text-white">${getTotal().toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-4 p-6 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
+                                <Info className="w-5 h-5 text-amber-500 shrink-0" />
+                                <p className="text-xs text-slate-400 leading-relaxed italic">
+                                    Una vez realizada la transferencia, <span className="text-white font-bold">toma una captura o foto de tu comprobante</span> y súbelo en el formulario de abajo para que podamos validar tu pedido.
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={() => setShowBankModal(false)}
+                                className="w-full bg-white text-black py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-slate-100 transition-all shadow-xl active:scale-95"
+                            >
+                                Entendido, continuar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     )
 } 
