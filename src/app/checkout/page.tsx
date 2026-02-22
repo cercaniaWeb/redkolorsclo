@@ -54,48 +54,87 @@ export default function CheckoutPage() {
 
         setLoading(true)
 
-        if (method === 'transferencia') {
-            if (!receiptFile) {
-                alert('Por favor, sube el comprobante de transferencia antes de continuar.')
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                alert('Debes iniciar sesión para finalizar tu compra.')
+                router.push('/login')
                 setLoading(false)
                 return
             }
 
-            try {
-                // Upload receipt to products bucket (or a new 'receipts' bucket if it existed, we'll use products for now for simplicity, or just public auth)
-                // Real implementation would use RLS protected 'receipts' bucket
-                const fileExt = receiptFile.name.split('.').pop()
-                const fileName = `receipt_${Date.now()}.${fileExt}`
+            let receipt_url = null
 
-                const { error: uploadError } = await supabase.storage
-                    .from('products') // Assuming 'products' is a public bucket we can temp use, but normally we'd create 'receipts'
-                    .upload(`receipts/${fileName}`, receiptFile)
-
-                if (uploadError) {
-                    // Throwing generic alert, though ideally would have proper error handling
-                    console.error('Upload Error:', uploadError)
-                    window.alert('Error al subir el comprobante. Tal vez no tienes permisos.')
+            if (method === 'transferencia') {
+                if (!receiptFile) {
+                    alert('Por favor, sube el comprobante de transferencia antes de continuar.')
                     setLoading(false)
                     return
                 }
 
-                // Simulate saving order to DB
-                // Normally we would insert into 'sales' or 'online_orders' table statuses
-                setSuccess(true)
-                clearCart()
-            } catch (err) {
-                console.error(err)
-            } finally {
-                setLoading(false)
+                const fileExt = receiptFile.name.split('.').pop()
+                const fileName = `receipt_${Date.now()}.${fileExt}`
+
+                const { error: uploadError, data: uploadData } = await supabase.storage
+                    .from('products')
+                    .upload(`receipts/${fileName}`, receiptFile)
+
+                if (uploadError) {
+                    console.error('Upload Error:', uploadError)
+                    window.alert('Error al subir el comprobante.')
+                    setLoading(false)
+                    return
+                }
+
+                const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(uploadData.path)
+                receipt_url = publicUrl
             }
-        } else if (method === 'tarjeta') {
-            // Simulate Stripe Elements Redirect
-            alert('¡Serás redirigido a la pasarela de pago segura de Stripe!')
-            setTimeout(() => {
-                setSuccess(true)
-                clearCart()
+
+            // Create Order
+            const { data: orderData, error: orderError } = await supabase
+                .from('online_orders')
+                .insert({
+                    user_id: user.id,
+                    total: getTotal(),
+                    payment_method: method,
+                    delivery_method: deliveryMethod,
+                    receipt_url,
+                    shipping_address: deliveryMethod === 'envio' ? address : null,
+                    status: method === 'tarjeta' ? 'payment_approved' : 'pending_verification'
+                })
+                .select()
+                .single()
+
+            if (orderError) {
+                console.error('Order Error:', orderError)
+                alert('Error al procesar el pedido. Asegúrate de que el administrador haya ejecutado el script SQL de orders.')
                 setLoading(false)
-            }, 1500)
+                return
+            }
+
+            // Create Order Items
+            const orderItems = items.map(item => ({
+                order_id: orderData.id,
+                product_id: item.id,
+                quantity: item.quantity,
+                price_at_time: item.price
+            }))
+
+            const { error: itemsError } = await supabase
+                .from('online_order_items')
+                .insert(orderItems)
+
+            if (itemsError) {
+                console.error('Items Error:', itemsError)
+            }
+
+            setSuccess(true)
+            clearCart()
+        } catch (err) {
+            console.error(err)
+            alert('Ocurrió un error inesperado.')
+        } finally {
+            setLoading(false)
         }
     }
 

@@ -7,14 +7,15 @@ import { useRouter } from 'next/navigation'
 import {
     Trash2, Plus, RefreshCw, LogOut, LayoutDashboard,
     ShoppingBag, Search, ChevronRight, TrendingUp, Package, Users, MapPin,
-    AlertTriangle, Award, Calendar, ExternalLink, UserCheck, Check, X
+    AlertTriangle, Award, Calendar, ExternalLink, UserCheck, Check, X, XCircle, CreditCard
 } from 'lucide-react'
 import Logo from '../components/Logo'
 
 export default function AdminDashboard() {
-    const [view, setView] = useState<'inventory' | 'reports' | 'clients'>('inventory')
+    const [view, setView] = useState<'inventory' | 'reports' | 'clients' | 'orders'>('inventory')
     const [products, setProducts] = useState<any[]>([])
     const [sales, setSales] = useState<any[]>([])
+    const [onlineOrders, setOnlineOrders] = useState<any[]>([])
     const [clients, setClients] = useState<any[]>([])
     const [topSoldProducts, setTopSoldProducts] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -47,11 +48,12 @@ export default function AdminDashboard() {
 
         try {
             // Fetch All Necessary Data
-            const [prodRes, salesRes, profilesRes, itemsRes] = await Promise.all([
+            const [prodRes, salesRes, profilesRes, itemsRes, onlineOrdersRes] = await Promise.all([
                 supabase.from('products').select('*, product_branches(*)'),
                 supabase.from('sales').select('*').order('created_at', { ascending: false }),
                 supabase.from('profiles').select('*'),
-                supabase.from('sale_items').select('*, products(title, image_url)')
+                supabase.from('sale_items').select('*, products(title, image_url)'),
+                supabase.from('online_orders').select('*, profiles(full_name, email), online_order_items(*, products(title))').order('created_at', { ascending: false })
             ])
 
             if (!isMounted) return
@@ -59,6 +61,7 @@ export default function AdminDashboard() {
             if (prodRes.data) setProducts(prodRes.data)
             if (salesRes.data) setSales(salesRes.data)
             if (profilesRes.data) setClients(profilesRes.data)
+            if (onlineOrdersRes.data) setOnlineOrders(onlineOrdersRes.data)
 
             // Calculate Top Products
             if (itemsRes.data) {
@@ -169,6 +172,20 @@ export default function AdminDashboard() {
         }
     }
 
+    const updateOrderStatus = async (orderId: string, newStatus: string) => {
+        const { error } = await supabase
+            .from('online_orders')
+            .update({ status: newStatus })
+            .eq('id', orderId)
+
+        if (error) {
+            showNotification('Error al actualizar pedido', 'error')
+        } else {
+            showNotification(`Pedido ${newStatus} exitosamente`, 'success')
+            fetchDashboardData()
+        }
+    }
+
     const handleCreateClient = async (e: React.FormEvent) => {
         e.preventDefault()
         if (isAddingClient) return
@@ -240,6 +257,15 @@ export default function AdminDashboard() {
                             }`}
                     >
                         <Users className="w-5 h-5" /> Clientes
+                    </button>
+                    <button
+                        onClick={() => setView('orders')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all font-medium ${view === 'orders'
+                            ? 'bg-rose-600/10 text-rose-500 border-rose-500/10'
+                            : 'text-slate-400 border-transparent hover:text-white hover:bg-white/5'
+                            }`}
+                    >
+                        <Package className="w-5 h-5" /> Pedidos Online
                     </button>
                 </nav>
 
@@ -541,6 +567,112 @@ export default function AdminDashboard() {
                                     </div>
                                 )}
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {view === 'orders' && (
+                    <div className="space-y-12 animate-reveal">
+                        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                            <div className="space-y-1">
+                                <h1 className="text-4xl font-black text-white tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-500">Pedidos Online</h1>
+                                <p className="text-slate-500 font-medium">Validación de pagos y control de despacho.</p>
+                            </div>
+                        </header>
+
+                        <div className="glass rounded-[3rem] border-white/5 shadow-2xl overflow-hidden overflow-x-auto">
+                            <table className="w-full text-left border-collapse min-w-[1000px]">
+                                <thead>
+                                    <tr className="bg-slate-950/50 border-b border-white/5">
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Orden / Fecha</th>
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Cliente</th>
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Monto</th>
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Pago / Entrega</th>
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Ticket</th>
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Estado</th>
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {onlineOrders.map((order) => (
+                                        <tr key={order.id} className="hover:bg-white/[0.02] transition-colors group">
+                                            <td className="px-8 py-6">
+                                                <div className="flex flex-col">
+                                                    <span className="text-white font-black text-sm uppercase tracking-tighter cursor-help" title={order.id}>#{order.id.split('-')[0]}</span>
+                                                    <span className="text-slate-500 text-[10px] font-bold">{new Date(order.created_at).toLocaleString()}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex flex-col">
+                                                    <span className="text-white font-bold text-sm">{order.profiles?.full_name || 'Desconocido'}</span>
+                                                    <span className="text-slate-500 text-[10px]">{order.profiles?.email}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <span className="text-white font-black text-lg tracking-tighter">${order.total.toLocaleString()}</span>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <CreditCard className="w-3 h-3 text-blue-500" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{order.payment_method}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Package className="w-3 h-3 text-rose-500" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{order.delivery_method}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 text-center">
+                                                {order.receipt_url ? (
+                                                    <a href={order.receipt_url} target="_blank" className="inline-flex w-10 h-10 bg-blue-600/20 text-blue-500 rounded-xl items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
+                                                        <ExternalLink className="w-5 h-5" />
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-slate-600 text-xs italic">N/A</span>
+                                                )}
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-tighter inline-block ${order.status === 'payment_approved' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' :
+                                                    order.status === 'payment_rejected' ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' :
+                                                        'bg-slate-900 border-white/10 text-slate-400'
+                                                    }`}>
+                                                    {order.status === 'pending_verification' ? 'En Verificación' :
+                                                        order.status === 'payment_approved' ? 'Pago Aprobado' :
+                                                            order.status === 'payment_rejected' ? 'Pago Rechazado' : order.status}
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {order.status === 'pending_verification' && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => updateOrderStatus(order.id, 'payment_approved')}
+                                                                className="h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-2"
+                                                            >
+                                                                <Check className="w-4 h-4" /> Aprobar
+                                                            </button>
+                                                            <button
+                                                                onClick={() => updateOrderStatus(order.id, 'payment_rejected')}
+                                                                className="h-10 px-4 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-white rounded-xl font-bold text-xs border border-rose-500/20 transition-all flex items-center gap-2"
+                                                            >
+                                                                <XCircle className="w-4 h-4" /> Rechazar
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {onlineOrders.length === 0 && (
+                                        <tr>
+                                            <td colSpan={7} className="py-20 text-center text-slate-600 font-medium italic">
+                                                No hay pedidos online registrados aún.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 )}
