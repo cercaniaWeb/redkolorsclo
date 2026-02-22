@@ -155,7 +155,7 @@ export default function AdminDashboard() {
 
         const { error } = await supabase
             .from('product_branches')
-            .upsert({ product_id: productId, branch_id: branchId, stock: newStock, updated_at: new Date().toISOString() }, { onConflict: 'product_id, branch_id' })
+            .upsert({ product_id: productId, branch_id: branchId, stock: newStock }, { onConflict: 'product_id, branch_id' })
 
         if (error) {
             console.error('Error saving stock:', error.message)
@@ -665,8 +665,8 @@ export default function AdminDashboard() {
             {/* Global Notification Toast */}
             {notification && (
                 <div className={`fixed bottom-8 right-8 z-[60] px-6 py-4 rounded-2xl flex items-center gap-4 shadow-2xl animate-reveal border backdrop-blur-md ${notification.type === 'success'
-                        ? 'bg-emerald-950/80 border-emerald-500/30 text-emerald-400'
-                        : 'bg-rose-950/80 border-rose-500/30 text-rose-400'
+                    ? 'bg-emerald-950/80 border-emerald-500/30 text-emerald-400'
+                    : 'bg-rose-950/80 border-rose-500/30 text-rose-400'
                     }`}>
                     {notification.type === 'success' ? <Check className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
                     <span className="font-bold">{notification.message}</span>
