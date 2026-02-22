@@ -3,34 +3,45 @@
 import { Facebook, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Logo from './Logo'
+
+import { useState, useEffect } from 'react'
 
 export default function Footer() {
+    const [isStandalone, setIsStandalone] = useState(false)
     const pathname = usePathname()
+
+    useEffect(() => {
+        if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
+            setIsStandalone(true)
+        }
+    }, [])
 
     if (pathname === '/pos') return null
 
     return (
-        <footer className="bg-black border-t border-gray-900 pt-16 pb-8 text-gray-400">
-            <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <footer className="bg-[#020617] border-t border-white/5 pt-20 pb-10 text-slate-400">
+            <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
                 {/* Brand */}
-                <div className="col-span-1 md:col-span-1 flex flex-col items-start gap-4">
-                    <Link href="/" className="flex items-center gap-1 group">
-                        <span className="text-3xl font-black tracking-tight text-red-600 group-hover:text-red-500 transition-colors">
-                            RED
-                        </span>
-                        <span className="text-3xl font-light tracking-widest text-white group-hover:text-gray-300 transition-colors">
-                            KOLORS
-                        </span>
+                <div className="col-span-1 md:col-span-1 flex flex-col items-start gap-6">
+                    <Link href="/" className="group hover:opacity-80 transition-opacity">
+                        <Logo scale={0.7} className="-ml-6" />
                     </Link>
                     <p className="text-sm leading-relaxed mt-2 text-gray-500">
-                        Moda exclusiva para dama.<br />Dos sucursales, una sola pasión.
+                        Moda exclusiva para dama.<br />Tres sucursales, una sola pasión.
                     </p>
-                    <div className="flex items-center gap-4 mt-4">
-                        <a href="https://www.facebook.com/groups/204246849098372/" target="_blank" className="p-2 bg-gray-900 rounded-full hover:bg-red-900 hover:text-red-500 transition-all text-white border border-gray-800">
-                            <Facebook className="w-5 h-5" />
+                    <div className="flex flex-col gap-3 mt-4">
+                        <a href="https://www.facebook.com/groups/204246849098372/" target="_blank" className="flex items-center gap-3 group">
+                            <div className="p-2.5 bg-white/5 rounded-xl group-hover:bg-rose-600 transition-all text-white border border-white/5">
+                                <Facebook className="w-4 h-4" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] group-hover:text-white transition-colors">Floresta</span>
                         </a>
-                        <a href="https://www.facebook.com/groups/536739121176220/" target="_blank" className="p-2 bg-gray-900 rounded-full hover:bg-red-900 hover:text-red-500 transition-all text-white border border-gray-800">
-                            <Facebook className="w-5 h-5" />
+                        <a href="https://www.facebook.com/groups/536739121176220/" target="_blank" className="flex items-center gap-3 group">
+                            <div className="p-2.5 bg-white/5 rounded-xl group-hover:bg-rose-600 transition-all text-white border border-white/5">
+                                <Facebook className="w-4 h-4" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] group-hover:text-white transition-colors">Pantitlán</span>
                         </a>
                     </div>
                 </div>
@@ -41,7 +52,9 @@ export default function Footer() {
                     <Link href="/tienda" className="hover:text-red-500 transition-colors">Catálogo Completo</Link>
                     <Link href="/#sucursales" className="hover:text-red-500 transition-colors">Nuestras Sucursales</Link>
                     <Link href="/#novedades" className="hover:text-red-500 transition-colors">Novedades y RRSS</Link>
-                    <Link href="/admin" className="text-red-500 font-bold hover:text-red-400 bg-red-950/30 px-3 py-1 rounded w-max inline-block transition-colors mt-2 text-xs border border-red-900/50">Admin Panel</Link>
+                    {!isStandalone && (
+                        <Link href="/admin" className="text-red-500 font-bold hover:text-red-400 bg-red-950/30 px-3 py-1 rounded w-max inline-block transition-colors mt-2 text-xs border border-red-900/50">Admin Panel</Link>
+                    )}
                 </div>
 
                 {/* Info */}
@@ -63,9 +76,9 @@ export default function Footer() {
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 border-t border-gray-900 pt-8 flex items-center justify-center">
-                <p className="text-xs text-center">
-                    © {new Date().getFullYear()} Red Kolors Clothing · <span className="text-red-500">Todos los derechos reservados.</span>
+            <div className="container mx-auto px-6 border-t border-white/5 pt-10 flex items-center justify-center">
+                <p className="text-[10px] font-black uppercase tracking-widest text-center opacity-40">
+                    © 2026 Red Kolors Clothing · <span className="text-rose-600">Premium Fashion Experience</span>
                 </p>
             </div>
         </footer>

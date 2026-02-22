@@ -20,38 +20,36 @@ export default function BranchSelector({ currentBranch }: { currentBranch: strin
         if (branch === 'all') {
             const params = new URLSearchParams(searchParams.toString())
             params.delete('branch')
-            router.push(`?${params.toString()}`)
+            router.push(`?${params.toString()}`, { scroll: false })
         } else {
-            router.push(`?${createQueryString('branch', branch)}`)
+            router.push(`?${createQueryString('branch', branch)}`, { scroll: false })
         }
     }
 
+    const branches = [
+        { id: 'all', label: 'Todas' },
+        { id: 'simon', label: 'Bolívar' },
+        { id: 'floresta', label: 'Floresta' },
+        { id: 'pantitlan', label: 'Pantitlán' },
+    ]
+
     return (
-        <div className="flex bg-gray-900 border border-gray-800 rounded-lg p-1 space-x-1">
-            <button
-                onClick={() => handleBranchChange('all')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${currentBranch === 'all' || !currentBranch ? 'bg-red-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
-            >
-                Todas
-            </button>
-            <button
-                onClick={() => handleBranchChange('simon')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${currentBranch === 'simon' ? 'bg-red-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
-            >
-                Simón Bolívar
-            </button>
-            <button
-                onClick={() => handleBranchChange('floresta')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${currentBranch === 'floresta' ? 'bg-red-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
-            >
-                Floresta
-            </button>
-            <button
-                onClick={() => handleBranchChange('pantitlan')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${currentBranch === 'pantitlan' ? 'bg-red-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
-            >
-                Pantitlán
-            </button>
+        <div className="inline-flex p-1.5 bg-white/5 backdrop-blur-md border border-white/5 rounded-[2rem] shadow-inner mb-8">
+            {branches.map((branch) => {
+                const isActive = (currentBranch === branch.id) || (branch.id === 'all' && (!currentBranch || currentBranch === 'all'))
+                return (
+                    <button
+                        key={branch.id}
+                        onClick={() => handleBranchChange(branch.id)}
+                        className={`px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all duration-300 ${isActive
+                                ? 'bg-white text-black shadow-[0_5px_15px_rgba(255,255,255,0.2)]'
+                                : 'text-slate-500 hover:text-white hover:bg-white/5'
+                            }`}
+                    >
+                        {branch.label}
+                    </button>
+                )
+            })}
         </div>
     )
 }

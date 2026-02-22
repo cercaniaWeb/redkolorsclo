@@ -1,15 +1,17 @@
 import { supabase } from '@/lib/supabase'
 import BranchSelector from '../components/BranchSelector'
 import ProductCard from '../components/ProductCard'
+import { ShoppingBag } from 'lucide-react'
 
-export const revalidate = 0 // Disable caching for now to see live data
+export const revalidate = 0
 
-export default async function Home({
+export default async function TiendaPage({
   searchParams,
 }: {
-  searchParams: { branch?: string }
+  searchParams: Promise<{ branch?: string }>
 }) {
-  const branch = searchParams.branch || 'all'
+  const resolvedParams = await searchParams
+  const branch = resolvedParams.branch || 'all'
 
   let query = supabase
     .from('products')
@@ -24,46 +26,58 @@ export default async function Home({
 
   const { data: products, error } = await query
 
+  const branchTitles: Record<string, string> = {
+    all: 'Colección Global',
+    simon: 'Sede Simón Bolívar',
+    floresta: 'Sede Floresta',
+    pantitlan: 'Sede Pantitlán'
+  }
+
   if (error) {
     console.error('Error fetching products:', error)
   }
 
   return (
-    <div className="bg-gray-950 text-white min-h-screen pb-24">
-      {/* Header / Title */}
-      <section className="pt-12 pb-8 px-4 text-center container mx-auto">
-        <h2 className="text-4xl md:text-6xl font-extrabold mb-4 tracking-tight">
-          Nuestra <span className="text-red-600">Colección</span>
-        </h2>
-        <p className="text-gray-400 max-w-2xl mx-auto text-lg mb-8">
-          Explora nuestro catálogo completo. Selecciona tu sucursal para ver disponibilidad en tiempo real.
-        </p>
-        <div className="flex justify-center">
-          <BranchSelector currentBranch={branch} />
+    <div className="bg-[#020617] text-white min-h-screen">
+      {/* Header Section - Modern Fashion Style */}
+      <section className="relative pt-40 pb-20 px-6 overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-rose-600/5 blur-[120px] -z-10"></div>
+        <div className="absolute bottom-0 left-0 w-1/4 h-full bg-blue-600/5 blur-[100px] -z-10"></div>
+
+        <div className="container mx-auto text-center space-y-8 animate-reveal">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-rose-600/10 rounded-3xl flex items-center justify-center border border-rose-500/20 shadow-2xl">
+              <ShoppingBag className="w-8 h-8 text-rose-500" />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-tight drop-shadow-2xl">
+              Nuestra <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-rose-400 italic font-serif">Colección</span>
+            </h1>
+            <p className="text-slate-500 max-w-2xl mx-auto text-xl font-light">
+              {branchTitles[branch]}. Selecciona una sede para verificar la disponibilidad exclusiva en tiempo real.
+            </p>
+          </div>
+
+          <div className="flex justify-center pt-8">
+            <BranchSelector currentBranch={branch} />
+          </div>
         </div>
       </section>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-16 px-4 md:pt-40 md:pb-20 text-center container mx-auto">
-        <h2 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight">
-          Nueva Colección <span className="text-red-600">Premium</span>
-        </h2>
-        <p className="text-gray-400 max-w-2xl mx-auto text-lg md:text-xl">
-          Explora nuestro catálogo completo. Selecciona tu sucursal para ver disponibilidad en tiempo real.
-        </p>
-      </section>
-
-      {/* Product Grid */}
-      <section className="container mx-auto px-4 pb-24">
+      {/* Product Grid - Enhanced Spacing */}
+      <section className="container mx-auto px-6 pb-40">
         {products && products.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-20">
-            <p className="text-gray-500 text-lg">No se encontraron productos en esta sucursal.</p>
+          <div className="text-center py-40 border-2 border-dashed border-white/5 rounded-[3rem] bg-white/[0.01]">
+            <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em] mb-4">Stock Agotado</p>
+            <p className="text-slate-500 text-lg font-light">No se encontraron productos disponibles en esta sede en este momento.</p>
           </div>
         )}
       </section>
