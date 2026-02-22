@@ -34,22 +34,24 @@ export default function BranchSelector({ currentBranch }: { currentBranch: strin
     ]
 
     return (
-        <div className="inline-flex p-1.5 bg-white/5 backdrop-blur-md border border-white/5 rounded-[2rem] shadow-inner mb-8">
-            {branches.map((branch) => {
-                const isActive = (currentBranch === branch.id) || (branch.id === 'all' && (!currentBranch || currentBranch === 'all'))
-                return (
-                    <button
-                        key={branch.id}
-                        onClick={() => handleBranchChange(branch.id)}
-                        className={`px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all duration-300 ${isActive
+        <div className="overflow-x-auto scrollbar-hide pb-1">
+            <div className="inline-flex p-1.5 bg-white/5 backdrop-blur-md border border-white/5 rounded-[2rem] shadow-inner mb-8 min-w-max mx-auto">
+                {branches.map((branch) => {
+                    const isActive = (currentBranch === branch.id) || (branch.id === 'all' && (!currentBranch || currentBranch === 'all'))
+                    return (
+                        <button
+                            key={branch.id}
+                            onClick={() => handleBranchChange(branch.id)}
+                            className={`px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all duration-300 ${isActive
                                 ? 'bg-white text-black shadow-[0_5px_15px_rgba(255,255,255,0.2)]'
                                 : 'text-slate-500 hover:text-white hover:bg-white/5'
-                            }`}
-                    >
-                        {branch.label}
-                    </button>
-                )
-            })}
+                                }`}
+                        >
+                            {branch.label}
+                        </button>
+                    )
+                })}
+            </div>
         </div>
     )
 }

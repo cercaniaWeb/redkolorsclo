@@ -21,7 +21,7 @@ export default function Footer() {
 
     return (
         <footer className="bg-[#020617] border-t border-white/5 pt-20 pb-10 text-slate-400">
-            <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
+            <div className="container mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-16 mb-20">
                 {/* Brand */}
                 <div className="col-span-1 md:col-span-1 flex flex-col items-start gap-6">
                     <Link href="/" className="group hover:opacity-80 transition-opacity">

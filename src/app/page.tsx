@@ -31,7 +31,7 @@ export default function HomePage() {
                             </div>
                         </div>
 
-                        <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-[0.85] text-balance">
+                        <h1 className="text-6xl sm:text-7xl md:text-9xl font-black tracking-tighter leading-[0.85] text-balance">
                             Viste<br />tu <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-rose-400 to-rose-600 italic font-serif pb-2 drop-shadow-sm">esencia</span>
                         </h1>
 

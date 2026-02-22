@@ -52,7 +52,7 @@ export default async function TiendaPage({
           </div>
 
           <div className="space-y-4">
-            <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-tight drop-shadow-2xl">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter leading-tight drop-shadow-2xl">
               Nuestra <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-rose-400 italic font-serif">Colección</span>
             </h1>
             <p className="text-slate-500 max-w-2xl mx-auto text-xl font-light">
@@ -60,7 +60,7 @@ export default async function TiendaPage({
             </p>
           </div>
 
-          <div className="flex justify-center pt-8">
+          <div className="flex justify-center pt-8 overflow-x-auto pb-2">
             <BranchSelector currentBranch={branch} />
           </div>
         </div>

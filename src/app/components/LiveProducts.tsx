@@ -31,7 +31,7 @@ export default async function LiveProducts() {
                             </div>
                             <span className="text-slate-500 text-xs font-black uppercase tracking-widest">Modelos Destacados</span>
                         </div>
-                        <h2 className="text-4xl md:text-6xl font-black tracking-tight">Recién vistos en el <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-rose-400 italic font-serif">Directo</span></h2>
+                        <h2 className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tight">Recién vistos en el <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-rose-400 italic font-serif">Directo</span></h2>
                         <p className="text-slate-400 text-lg font-light max-w-xl">
                             ¿Viste algo que te encantó en Facebook? Aquí tienes acceso rápido a los modelos estrella de nuestra última transmisión.
                         </p>
@@ -55,12 +55,12 @@ export default async function LiveProducts() {
                 </div>
 
                 <div className="mt-16 p-8 rounded-[2.5rem] bg-gradient-to-r from-rose-900/20 to-slate-900/20 border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-white/5 rounded-3xl flex items-center justify-center border border-white/10">
-                            <Facebook className="w-8 h-8 text-rose-600" />
+                    <div className="flex items-start sm:items-center gap-4 sm:gap-6">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/5 rounded-3xl flex items-center justify-center border border-white/10 shrink-0">
+                            <Facebook className="w-6 h-6 sm:w-8 sm:h-8 text-rose-600" />
                         </div>
                         <div>
-                            <p className="text-white font-bold text-lg">¿Todavía no nos sigues?</p>
+                            <p className="text-white font-bold text-base sm:text-lg">¿Todavía no nos sigues?</p>
                             <p className="text-slate-500 text-sm">Activa las notificaciones en Facebook para no perderte el próximo Live.</p>
                         </div>
                     </div>
