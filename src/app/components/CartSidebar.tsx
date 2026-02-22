@@ -13,18 +13,7 @@ export default function CartSidebar() {
     if (pathname === '/pos') return null
     if (!isOpen) return null
 
-    const handleWhatsAppOrder = () => {
-        let message = "Hola, me gustaría pedir los siguientes productos:%0A%0A"
-        items.forEach(item => {
-            message += `- ${item.quantity}x ${item.title} ($${item.price.toFixed(2)} c/u)%0A`
-        })
-        message += `%0A*Total: $${getTotal().toFixed(2)}*`
-
-        // Replace this with your actual WhatsApp number for Red Kolors
-        const whatsappNumber = "529999999999"
-        const url = `https://wa.me/${whatsappNumber}?text=${message}`
-        window.open(url, '_blank')
-    }
+    // Removed handleWhatsAppOrder as it's now secondary inside checkout
 
     return (
         <>
@@ -48,53 +37,57 @@ export default function CartSidebar() {
                     </button>
                 </div>
 
-                {/* Cart Items */}
-                <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 scroll-smooth">
+                {/* Items */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                     {items.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-4">
-                            <ShoppingBag className="w-16 h-16 text-gray-800" />
-                            <p className="text-lg">Tu carrito está vacío 🛍️</p>
+                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                            <div className="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center mb-2">
+                                <ShoppingBag className="w-10 h-10 text-gray-700" />
+                            </div>
+                            <p className="text-gray-500 font-medium">Tu carrito está vacío</p>
                             <button
-                                onClick={toggleCart}
-                                className="mt-4 px-6 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-full border border-gray-800 transition-colors"
+                                onClick={() => setIsOpen(false)}
+                                className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-full text-sm font-bold transition-colors"
                             >
-                                Seguir comprando
+                                Explorar Colección
                             </button>
                         </div>
                     ) : (
                         items.map((item) => (
-                            <div key={item.id} className="flex gap-4 p-4 bg-gray-900/50 border border-gray-800/50 rounded-2xl hover:bg-gray-900 transition-colors relative group">
+                            <div key={item.id} className="flex gap-4 bg-gray-900/50 p-4 rounded-2xl border border-gray-800/50 group">
                                 {/* Image */}
-                                <div className="relative w-24 h-32 rounded-xl overflow-hidden bg-white shrink-0 shadow-lg">
+                                <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-900 shrink-0 relative">
                                     <Image
                                         src={item.image_url}
                                         alt={item.title}
                                         fill
-                                        className="object-cover object-top"
-                                        sizes="96px"
+                                        className="object-cover"
                                     />
                                 </div>
 
                                 {/* Details */}
                                 <div className="flex flex-col justify-between flex-1 py-1">
-                                    <div>
-                                        <h4 className="font-bold text-gray-100 text-sm line-clamp-2 leading-snug">{item.title}</h4>
-                                        <p className="text-red-500 font-bold mt-1 text-lg">${item.price.toFixed(2)}</p>
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h3 className="font-bold text-white line-clamp-1 pr-2">{item.title}</h3>
+                                            <p className="text-sm text-gray-400 font-medium mt-1">Talla: <span className="text-white">Única</span></p>
+                                        </div>
+                                        <p className="font-black text-red-500">${item.price.toFixed(2)}</p>
                                     </div>
 
-                                    {/* Quantity and Actions */}
+                                    {/* Actions */}
                                     <div className="flex items-center justify-between mt-4">
-                                        <div className="flex items-center gap-1 bg-black rounded-lg border border-gray-800 p-1">
+                                        <div className="flex items-center gap-1 bg-black rounded-lg p-1 border border-gray-800">
                                             <button
-                                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                                className="p-1 hover:text-red-500 text-gray-400 hover:bg-gray-800 rounded-md transition-colors"
+                                                onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                                                className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-900 hover:bg-red-600 text-white transition-colors"
                                             >
                                                 <Minus className="w-4 h-4" />
                                             </button>
-                                            <span className="w-8 text-center text-sm font-medium text-white select-none">{item.quantity}</span>
+                                            <span className="w-8 text-center font-bold text-sm text-white">{item.quantity}</span>
                                             <button
                                                 onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                className="p-1 hover:text-red-500 text-gray-400 hover:bg-gray-800 rounded-md transition-colors"
+                                                className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-900 hover:bg-red-600 text-white transition-colors"
                                             >
                                                 <Plus className="w-4 h-4" />
                                             </button>
@@ -122,11 +115,14 @@ export default function CartSidebar() {
                         </div>
 
                         <button
-                            onClick={handleWhatsAppOrder}
-                            className="w-full flex items-center justify-center gap-2 py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold text-lg transition-transform transform hover:-translate-y-1 shadow-xl shadow-green-900/30"
+                            onClick={() => {
+                                setIsOpen(false)
+                                window.location.href = '/checkout'
+                            }}
+                            className="w-full flex items-center justify-center gap-2 py-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-lg transition-transform transform hover:-translate-y-1 shadow-xl shadow-rose-900/30"
                         >
-                            <MessageCircle className="w-6 h-6" />
-                            Pedir por WhatsApp
+                            <ShoppingBag className="w-6 h-6" />
+                            Proceder al Pago
                         </button>
                     </div>
                 )}

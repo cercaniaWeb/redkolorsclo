@@ -11,6 +11,9 @@ export default function LoginPage() {
     const [portal, setPortal] = useState<'public' | 'staff'>('public')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [name, setName] = useState('')
+    const [phone, setPhone] = useState('')
+    const [isRegistering, setIsRegistering] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const router = useRouter()
@@ -53,17 +56,41 @@ export default function LoginPage() {
         }
     }
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault()
         if (loading) return
         setLoading(true)
         setError(null)
 
         try {
-            const { data, error: authError } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            })
+            let data, authError;
+
+            if (isRegistering && portal === 'public') {
+                const res = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: name,
+                            phone: phone
+                        }
+                    }
+                })
+                data = res.data;
+                authError = res.error;
+
+                // If sign up fails because it exists, the error will be caught below
+                if (!authError && data.user) {
+                    await supabase.from('profiles').upsert({ id: data.user.id, role: 'cliente' })
+                }
+            } else {
+                const res = await supabase.auth.signInWithPassword({
+                    email,
+                    password,
+                })
+                data = res.data;
+                authError = res.error;
+            }
 
             if (!isMounted) return;
 
@@ -102,13 +129,13 @@ export default function LoginPage() {
 
                     <div className="bg-slate-900/50 p-1.5 rounded-[2rem] border border-white/5 flex items-center shadow-2xl backdrop-blur-md">
                         <button
-                            onClick={() => { setPortal('public'); setError(null); }}
+                            onClick={() => { setPortal('public'); setIsRegistering(false); setError(null); }}
                             className={`flex items-center gap-3 px-8 py-3.5 rounded-full text-xs font-black uppercase tracking-[0.15em] transition-all ${portal === 'public' ? 'bg-white text-black shadow-xl shadow-white/5 scale-105' : 'text-slate-500 hover:text-white'}`}
                         >
                             <ShoppingBag className={`w-4 h-4 ${portal === 'public' ? 'text-rose-600' : ''}`} /> Cliente
                         </button>
                         <button
-                            onClick={() => { setPortal('staff'); setError(null); }}
+                            onClick={() => { setPortal('staff'); setIsRegistering(false); setError(null); }}
                             className={`flex items-center gap-3 px-8 py-3.5 rounded-full text-xs font-black uppercase tracking-[0.15em] transition-all ${portal === 'staff' ? 'bg-rose-600 text-white shadow-xl shadow-rose-600/30 scale-105' : 'text-slate-500 hover:text-white'}`}
                         >
                             <ShieldCheck className="w-4 h-4" /> Personal
@@ -142,7 +169,36 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <form onSubmit={handleLogin} className="space-y-6">
+                        <form onSubmit={handleAuth} className="space-y-6">
+                            {isRegistering && portal === 'public' && (
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] pl-1">
+                                            Nombre Completo
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-5 text-white focus:outline-none focus:border-rose-500/50 focus:bg-black/60 transition-all font-medium text-lg placeholder:text-slate-800"
+                                            placeholder="Ej. María López"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] pl-1">
+                                            Teléfono
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                            className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-5 text-white focus:outline-none focus:border-rose-500/50 focus:bg-black/60 transition-all font-medium text-lg placeholder:text-slate-800"
+                                            placeholder="Ej. 5500000000"
+                                        />
+                                    </div>
+                                </>
+                            )}
                             <div className="space-y-2">
                                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] pl-1">
                                     Identificador Operativo
@@ -176,10 +232,22 @@ export default function LoginPage() {
                                 disabled={loading}
                                 className={`w-full group relative flex items-center justify-center gap-4 py-5 rounded-[2rem] font-black text-xl tracking-tight transition-all active:scale-95 disabled:opacity-50 ${portal === 'public' ? 'bg-white text-black shadow-2xl shadow-white/5 hover:bg-slate-100' : 'bg-rose-600 text-white shadow-2xl shadow-rose-600/20 hover:bg-rose-500'}`}
                             >
-                                {loading ? 'Validando...' : (portal === 'public' ? 'Iniciar Experiencia' : 'Ingresar a Caja')}
+                                {loading ? 'Validando...' : (isRegistering && portal === 'public' ? 'Crear Cuenta' : (portal === 'public' ? 'Iniciar Experiencia' : 'Ingresar a Caja'))}
                                 <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                             </button>
                         </form>
+
+                        {portal === 'public' && (
+                            <div className="text-center mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => { setIsRegistering(!isRegistering); setError(null); }}
+                                    className="text-slate-400 hover:text-white text-sm font-bold underline underline-offset-4"
+                                >
+                                    {isRegistering ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate aquí'}
+                                </button>
+                            </div>
+                        )}
 
                         <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
                             <Link href="/" className="text-slate-500 hover:text-white transition-colors text-sm font-bold flex items-center gap-2">
