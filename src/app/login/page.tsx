@@ -18,25 +18,33 @@ export default function LoginPage() {
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session) {
-                // Redirigir según el rol del perfil
-                fetchProfileAndRedirect()
+                redirectByRole(session.user.id)
             }
         })
     }, [])
 
-    const fetchProfileAndRedirect = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+    const redirectByRole = async (userId: string) => {
+        try {
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', userId)
+                .single()
 
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single()
+            if (error) {
+                console.error('Profile fetch error:', error.message)
+                // If we can't determine role, go home (customer fallback)
+                router.push('/')
+                return
+            }
 
-        if (profile?.role === 'admin' || profile?.role === 'cajero') {
-            router.push('/admin')
-        } else {
+            if (profile?.role === 'admin' || profile?.role === 'cajero') {
+                router.push('/admin')
+            } else {
+                router.push('/')
+            }
+        } catch (err) {
+            console.error('Unexpected error during redirect:', err)
             router.push('/')
         }
     }
@@ -46,16 +54,29 @@ export default function LoginPage() {
         setLoading(true)
         setError(null)
 
-        const { error: authError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        })
+        try {
+            const { data, error: authError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            })
 
-        if (authError) {
-            setError('Credenciales incorrectas.')
+            if (authError) {
+                setError('Credenciales incorrectas. Verifica tu email y contraseña.')
+                return
+            }
+
+            if (!data.user) {
+                setError('No se pudo obtener la sesión. Intenta de nuevo.')
+                return
+            }
+
+            await redirectByRole(data.user.id)
+            // Note: after router.push, this component unmounts — no need to setLoading(false)
+        } catch (err) {
+            setError('Error de conexión. Intenta de nuevo.')
+        } finally {
+            // Only runs if component is still mounted (i.e., redirect failed)
             setLoading(false)
-        } else {
-            await fetchProfileAndRedirect()
         }
     }
 
