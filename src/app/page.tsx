@@ -1,3 +1,4 @@
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 import Link from 'next/link'
 import Image from 'next/image'
 import { MapPin, ArrowRight, Sparkles, ShoppingBag, Facebook } from 'lucide-react'
@@ -5,10 +6,16 @@ import Logo from './components/Logo'
 import LiveBanner from './components/LiveBanner'
 import LiveProducts from './components/LiveProducts'
 
-export default function HomePage() {
+export const revalidate = 0 // Ensure this page doesn't cache the live status indefinitely
+
+export default async function HomePage() {
+    const supabase = await createSupabaseServerClient()
+    const { data: settings } = await supabase.from('store_settings').select('value').eq('key', 'is_live').single()
+    const isLive = settings?.value === 'true'
+
     return (
         <div className="flex flex-col text-white">
-            <LiveBanner />
+            {isLive && <LiveBanner />}
             {/* HERO SECTION */}
             <section id="inicio" className="relative min-h-[95vh] flex items-center pt-24 overflow-hidden">
                 {/* Dynamic Background */}

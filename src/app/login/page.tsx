@@ -14,13 +14,16 @@ export default function LoginPage() {
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const router = useRouter()
+    const [isMounted, setIsMounted] = useState(true);
 
     useEffect(() => {
+        setIsMounted(true);
         supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) {
+            if (session && isMounted) {
                 redirectByRole(session.user.id)
             }
         })
+        return () => setIsMounted(false);
     }, [])
 
     const redirectByRole = async (userId: string) => {
@@ -31,9 +34,10 @@ export default function LoginPage() {
                 .eq('id', userId)
                 .single()
 
+            if (!isMounted) return;
+
             if (error) {
                 console.error('Profile fetch error:', error.message)
-                // If we can't determine role, go home (customer fallback)
                 router.push('/')
                 return
             }
@@ -45,12 +49,13 @@ export default function LoginPage() {
             }
         } catch (err) {
             console.error('Unexpected error during redirect:', err)
-            router.push('/')
+            if (isMounted) router.push('/')
         }
     }
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (loading) return
         setLoading(true)
         setError(null)
 
@@ -60,23 +65,26 @@ export default function LoginPage() {
                 password,
             })
 
+            if (!isMounted) return;
+
             if (authError) {
                 setError('Credenciales incorrectas. Verifica tu email y contraseña.')
+                setLoading(false)
                 return
             }
 
             if (!data.user) {
                 setError('No se pudo obtener la sesión. Intenta de nuevo.')
+                setLoading(false)
                 return
             }
 
             await redirectByRole(data.user.id)
-            // Note: after router.push, this component unmounts — no need to setLoading(false)
         } catch (err) {
-            setError('Error de conexión. Intenta de nuevo.')
-        } finally {
-            // Only runs if component is still mounted (i.e., redirect failed)
-            setLoading(false)
+            if (isMounted) {
+                setError('Error de conexión. Intenta de nuevo.')
+                setLoading(false)
+            }
         }
     }
 

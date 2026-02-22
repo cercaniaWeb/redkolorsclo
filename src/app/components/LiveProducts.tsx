@@ -1,8 +1,9 @@
-import { supabase } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 import ProductCard from './ProductCard'
 import { Facebook, Sparkles } from 'lucide-react'
 
 export default async function LiveProducts() {
+    const supabase = await createSupabaseServerClient()
     // For now, we fetch products from a specific category or just the latest 4 
     // to simulate the "Live" feel until we have a proper database flag
     const { data: products } = await supabase

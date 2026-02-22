@@ -59,9 +59,25 @@ export default function POSPage() {
         }
         setUserRole(profile.role)
 
+        // Fetch initial Live state
+        const { data: settings } = await supabase.from('store_settings').select('value').eq('key', 'is_live').single()
+        if (settings) {
+            setIsLive(settings.value === 'true')
+        }
+
         await fetchProducts()
         await fetchTodaySales()
         setLoading(false)
+    }
+
+    const toggleLiveMode = async () => {
+        const newStatus = !isLive
+        setIsLive(newStatus)
+        const { error } = await supabase.from('store_settings').upsert({ key: 'is_live', value: String(newStatus) })
+        if (error) {
+            alert('Error al guardar el estado Live. Asegúrate de haber ejecutado el script SQL en Supabase para crear la tabla store_settings.')
+            setIsLive(!newStatus)
+        }
     }
 
     const fetchProducts = async () => {
@@ -240,7 +256,7 @@ export default function POSPage() {
                             </div>
                         </div>
                         <button
-                            onClick={() => setIsLive(!isLive)}
+                            onClick={toggleLiveMode}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${isLive ? 'bg-rose-600 border-rose-400 text-white animate-pulse' : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'}`}
                         >
                             <Facebook className={`w-4 h-4 ${isLive ? 'text-white' : 'text-slate-500'}`} />

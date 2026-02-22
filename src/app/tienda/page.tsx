@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 import BranchSelector from '../components/BranchSelector'
 import ProductCard from '../components/ProductCard'
 import { ShoppingBag } from 'lucide-react'
@@ -12,6 +12,7 @@ export default async function TiendaPage({
 }) {
   const resolvedParams = await searchParams
   const branch = resolvedParams.branch || 'all'
+  const supabase = await createSupabaseServerClient()
 
   let query = supabase
     .from('products')

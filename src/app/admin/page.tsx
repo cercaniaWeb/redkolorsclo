@@ -32,48 +32,59 @@ export default function AdminDashboard() {
     }
 
     const fetchDashboardData = async () => {
+        if (!isMounted) return
         setLoading(true)
 
-        // Fetch All Necessary Data
-        const [prodRes, salesRes, profilesRes, itemsRes] = await Promise.all([
-            supabase.from('products').select('*, product_branches(*)'),
-            supabase.from('sales').select('*').order('created_at', { ascending: false }),
-            supabase.from('profiles').select('*'),
-            supabase.from('sale_items').select('*, products(title, image_url)')
-        ])
+        try {
+            // Fetch All Necessary Data
+            const [prodRes, salesRes, profilesRes, itemsRes] = await Promise.all([
+                supabase.from('products').select('*, product_branches(*)'),
+                supabase.from('sales').select('*').order('created_at', { ascending: false }),
+                supabase.from('profiles').select('*'),
+                supabase.from('sale_items').select('*, products(title, image_url)')
+            ])
 
-        if (prodRes.data) setProducts(prodRes.data)
-        if (salesRes.data) setSales(salesRes.data)
-        if (profilesRes.data) setClients(profilesRes.data)
+            if (!isMounted) return
 
-        // Calculate Top Products
-        if (itemsRes.data) {
-            const productSales: Record<string, { title: string, image: string, qty: number, total: number }> = {}
-            itemsRes.data.forEach((item: any) => {
-                if (!productSales[item.product_id]) {
-                    productSales[item.product_id] = {
-                        title: item.products?.title || 'Producto Eliminado',
-                        image: item.products?.image_url || '',
-                        qty: 0,
-                        total: 0
+            if (prodRes.data) setProducts(prodRes.data)
+            if (salesRes.data) setSales(salesRes.data)
+            if (profilesRes.data) setClients(profilesRes.data)
+
+            // Calculate Top Products
+            if (itemsRes.data) {
+                const productSales: Record<string, { title: string, image: string, qty: number, total: number }> = {}
+                itemsRes.data.forEach((item: any) => {
+                    if (!productSales[item.product_id]) {
+                        productSales[item.product_id] = {
+                            title: item.products?.title || 'Producto Eliminado',
+                            image: item.products?.image_url || '',
+                            qty: 0,
+                            total: 0
+                        }
                     }
-                }
-                productSales[item.product_id].qty += item.quantity
-                productSales[item.product_id].total += item.quantity * item.price_at_time
-            })
-            const sorted = Object.entries(productSales)
-                .map(([id, stats]) => ({ id, ...stats }))
-                .sort((a, b) => b.qty - a.qty)
-                .slice(0, 5)
-            setTopSoldProducts(sorted)
+                    productSales[item.product_id].qty += item.quantity
+                    productSales[item.product_id].total += item.quantity * item.price_at_time
+                })
+                const sorted = Object.entries(productSales)
+                    .map(([id, stats]) => ({ id, ...stats }))
+                    .sort((a, b) => b.qty - a.qty)
+                    .slice(0, 5)
+                setTopSoldProducts(sorted)
+            }
+        } finally {
+            if (isMounted) setLoading(false)
         }
-
-        setLoading(false)
     }
 
+    const [isMounted, setIsMounted] = useState(true)
+
     useEffect(() => {
+        setIsMounted(true)
         const checkAuth = async () => {
             const { data: { user } } = await supabase.auth.getUser()
+
+            if (!isMounted) return
+
             if (!user) {
                 router.push('/login')
                 return
@@ -85,6 +96,8 @@ export default function AdminDashboard() {
                 .eq('id', user.id)
                 .single()
 
+            if (!isMounted) return
+
             if (profile?.role === 'admin' || profile?.role === 'cajero') {
                 setRole(profile.role)
                 fetchDashboardData()
@@ -93,6 +106,7 @@ export default function AdminDashboard() {
             }
         }
         checkAuth()
+        return () => setIsMounted(false)
     }, [])
 
     const deleteProduct = async (id: string, imageUrl: string) => {
@@ -109,14 +123,26 @@ export default function AdminDashboard() {
         fetchProducts()
     }
 
-    const updateStock = async (branchId: string, productId: string, currentStock: number, change: number) => {
-        const newStock = Math.max(0, currentStock + change)
+    const updateStockDirect = async (branchId: string, productId: string, newValue: number) => {
+        const newStock = Math.max(0, newValue)
+        // Optimistic UI update
+        setProducts(products.map(p => {
+            if (p.id === productId) {
+                const updatedBranches = p.product_branches ? [...p.product_branches] : []
+                const bIdx = updatedBranches.findIndex(b => b.branch_id === branchId)
+                if (bIdx >= 0) {
+                    updatedBranches[bIdx].stock = newStock
+                } else {
+                    updatedBranches.push({ branch_id: branchId, stock: newStock, product_id: productId } as any)
+                }
+                return { ...p, product_branches: updatedBranches }
+            }
+            return p
+        }))
+
         await supabase
             .from('product_branches')
-            .update({ stock: newStock, updated_at: new Date().toISOString() })
-            .match({ product_id: productId, branch_id: branchId })
-
-        fetchProducts()
+            .upsert({ product_id: productId, branch_id: branchId, stock: newStock, updated_at: new Date().toISOString() }, { onConflict: 'product_id, branch_id' })
     }
 
     const filteredProducts = products.filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -281,17 +307,33 @@ export default function AdminDashboard() {
                                                     {/* Stock Branches */}
                                                     {['simon', 'floresta', 'pantitlan'].map((branchId) => (
                                                         <td key={branchId} className="p-6">
-                                                            <div className="flex items-center justify-center gap-4 bg-black/20 rounded-2xl py-2 px-4 border border-white/5 w-max mx-auto">
+                                                            <div className="flex items-center justify-center gap-2 bg-black/20 rounded-2xl py-1.5 px-3 border border-white/5 w-max mx-auto">
                                                                 <button
-                                                                    onClick={() => updateStock(branchId, p.id, getStock(branchId), -1)}
-                                                                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-rose-600 hover:text-white transition-all text-slate-400 font-black"
+                                                                    onClick={() => updateStockDirect(branchId, p.id, getStock(branchId) - 1)}
+                                                                    className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-800/80 hover:bg-rose-600 hover:text-white transition-all text-slate-400 font-black text-lg"
                                                                 >-</button>
-                                                                <span className={`w-6 text-center text-sm font-black ${getStock(branchId) > 0 ? 'text-white' : 'text-rose-500 opacity-50'}`}>
-                                                                    {getStock(branchId)}
-                                                                </span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    defaultValue={getStock(branchId)}
+                                                                    onBlur={(e) => {
+                                                                        const val = parseInt(e.target.value);
+                                                                        if (!isNaN(val) && val !== getStock(branchId)) {
+                                                                            updateStockDirect(branchId, p.id, val);
+                                                                        } else {
+                                                                            e.target.value = getStock(branchId).toString();
+                                                                        }
+                                                                    }}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            e.currentTarget.blur();
+                                                                        }
+                                                                    }}
+                                                                    className={`w-12 text-center text-sm font-black bg-transparent border-none outline-none ${getStock(branchId) > 0 ? 'text-white' : 'text-rose-500 opacity-70'} hide-arrows`}
+                                                                />
                                                                 <button
-                                                                    onClick={() => updateStock(branchId, p.id, getStock(branchId), 1)}
-                                                                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-emerald-600 hover:text-white transition-all text-slate-400 font-black"
+                                                                    onClick={() => updateStockDirect(branchId, p.id, getStock(branchId) + 1)}
+                                                                    className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-800/80 hover:bg-emerald-600 hover:text-white transition-all text-slate-400 font-black text-lg"
                                                                 >+</button>
                                                             </div>
                                                         </td>
