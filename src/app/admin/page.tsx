@@ -21,7 +21,13 @@ export default function AdminDashboard() {
     const [role, setRole] = useState<string | null>(null)
     const [searchTerm, setSearchTerm] = useState('')
     const [stockPrompt, setStockPrompt] = useState<{ branchId: string; productId: string; newValue: number; productTitle: string; currentValue: number } | null>(null)
+    const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
     const router = useRouter()
+
+    const showNotification = (message: string, type: 'success' | 'error') => {
+        setNotification({ message, type })
+        setTimeout(() => setNotification(null), 4000)
+    }
 
     const fetchProducts = async () => {
         const { data, error } = await supabase
@@ -147,9 +153,17 @@ export default function AdminDashboard() {
             return p
         }))
 
-        await supabase
+        const { error } = await supabase
             .from('product_branches')
             .upsert({ product_id: productId, branch_id: branchId, stock: newStock, updated_at: new Date().toISOString() }, { onConflict: 'product_id, branch_id' })
+
+        if (error) {
+            console.error('Error saving stock:', error.message)
+            showNotification('Error al guardar en la base de datos', 'error')
+            // Option to revert UI could go here, but fetchProducts would also fix it eventually.
+        } else {
+            showNotification(`Stock guardado: ${newStock} en ${branchId}`, 'success')
+        }
     }
 
     const filteredProducts = products.filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -645,6 +659,17 @@ export default function AdminDashboard() {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Global Notification Toast */}
+            {notification && (
+                <div className={`fixed bottom-8 right-8 z-[60] px-6 py-4 rounded-2xl flex items-center gap-4 shadow-2xl animate-reveal border backdrop-blur-md ${notification.type === 'success'
+                        ? 'bg-emerald-950/80 border-emerald-500/30 text-emerald-400'
+                        : 'bg-rose-950/80 border-rose-500/30 text-rose-400'
+                    }`}>
+                    {notification.type === 'success' ? <Check className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                    <span className="font-bold">{notification.message}</span>
                 </div>
             )}
         </div>
