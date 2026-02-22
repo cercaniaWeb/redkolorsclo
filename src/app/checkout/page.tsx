@@ -12,6 +12,7 @@ export default function CheckoutPage() {
     const { items, getTotal, clearCart } = useCartStore()
     const router = useRouter()
     const [method, setMethod] = useState<'tarjeta' | 'transferencia' | 'whatsapp'>('transferencia')
+    const [deliveryMethod, setDeliveryMethod] = useState<'envio' | 'tienda'>('envio')
     const [loading, setLoading] = useState(false)
     const [receiptFile, setReceiptFile] = useState<File | null>(null)
     const [success, setSuccess] = useState(false)
@@ -127,8 +128,38 @@ export default function CheckoutPage() {
                 <div className="flex flex-col md:flex-row gap-12">
                     {/* Left Col: Payment Method */}
                     <form onSubmit={handleCheckout} className="flex-1 space-y-8 animate-reveal">
+
+                        {/* 1. Método de Entrega */}
                         <div className="space-y-4">
-                            <h2 className="text-xl font-bold text-white tracking-tighter mb-4">1. Método Principal</h2>
+                            <h2 className="text-xl font-bold text-white tracking-tighter mb-4">1. Método de Entrega</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <label className={`block border rounded-2xl p-6 cursor-pointer transition-all ${deliveryMethod === 'envio' ? 'bg-rose-600/10 border-rose-500/50' : 'bg-slate-900 border-white/5 hover:border-white/20'}`}>
+                                    <div className="flex items-center gap-4 mb-2">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${deliveryMethod === 'envio' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'bg-slate-800 text-slate-400'}`}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="16" x="4" y="4" rx="2" /><path d="M4 12h16" /><path d="M12 4v16" /></svg>
+                                        </div>
+                                        <h3 className={`font-black uppercase tracking-widest text-sm ${deliveryMethod === 'envio' ? 'text-white' : 'text-slate-400'}`}>Envío a Domicilio</h3>
+                                    </div>
+                                    <input type="radio" name="delivery" value="envio" checked={deliveryMethod === 'envio'} onChange={() => setDeliveryMethod('envio')} className="hidden" />
+                                    <p className="text-xs text-slate-500">Recibe tu paquete en la puerta de tu casa por paquetería.</p>
+                                </label>
+
+                                <label className={`block border rounded-2xl p-6 cursor-pointer transition-all ${deliveryMethod === 'tienda' ? 'bg-rose-600/10 border-rose-500/50' : 'bg-slate-900 border-white/5 hover:border-white/20'}`}>
+                                    <div className="flex items-center gap-4 mb-2">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${deliveryMethod === 'tienda' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'bg-slate-800 text-slate-400'}`}>
+                                            <Building className="w-5 h-5" />
+                                        </div>
+                                        <h3 className={`font-black uppercase tracking-widest text-sm ${deliveryMethod === 'tienda' ? 'text-white' : 'text-slate-400'}`}>Recoger en Tienda</h3>
+                                    </div>
+                                    <input type="radio" name="delivery" value="tienda" checked={deliveryMethod === 'tienda'} onChange={() => setDeliveryMethod('tienda')} className="hidden" />
+                                    <p className="text-xs text-slate-500">Pasa por tu mercancía a nuestras sucursales de forma gratuita.</p>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* 2. Método de Pago */}
+                        <div className="space-y-4 pt-6 border-t border-white/5">
+                            <h2 className="text-xl font-bold text-white tracking-tighter mb-4">2. Método de Pago</h2>
 
                             <label className={`block border rounded-2xl p-6 cursor-pointer transition-all ${method === 'transferencia' ? 'bg-blue-600/10 border-blue-500/50' : 'bg-slate-900 border-white/5 hover:border-white/20'}`}>
                                 <div className="flex items-center justify-between">
@@ -248,7 +279,11 @@ export default function CheckoutPage() {
                                 </div>
                                 <div className="flex justify-between items-center text-slate-400">
                                     <span className="text-sm">Envío</span>
-                                    <span className="text-xs font-black uppercase text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">Calculado al final</span>
+                                    {deliveryMethod === 'tienda' ? (
+                                        <span className="text-xs font-black uppercase text-rose-500 bg-rose-500/10 px-2 py-1 rounded-full">Gratis en Tienda</span>
+                                    ) : (
+                                        <span className="text-xs font-black uppercase text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">Calculado al final</span>
+                                    )}
                                 </div>
                                 <div className="flex justify-between items-center bg-slate-900 p-4 rounded-xl border border-white/5 mt-4">
                                     <span className="text-lg font-black text-white">Total a Pagar</span>
