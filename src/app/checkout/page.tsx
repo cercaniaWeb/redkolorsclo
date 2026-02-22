@@ -13,6 +13,18 @@ export default function CheckoutPage() {
     const router = useRouter()
     const [method, setMethod] = useState<'tarjeta' | 'transferencia' | 'whatsapp'>('transferencia')
     const [deliveryMethod, setDeliveryMethod] = useState<'envio' | 'tienda'>('envio')
+
+    // Shipping Address State
+    const [address, setAddress] = useState({
+        calle: '',
+        numero: '',
+        colonia: '',
+        cp: '',
+        ciudad: '',
+        estado: '',
+        referencias: ''
+    })
+
     const [loading, setLoading] = useState(false)
     const [receiptFile, setReceiptFile] = useState<File | null>(null)
     const [success, setSuccess] = useState(false)
@@ -157,6 +169,91 @@ export default function CheckoutPage() {
                             </div>
                         </div>
 
+                        {/* Address Form (Conditionally Rendered) */}
+                        {deliveryMethod === 'envio' && (
+                            <div className="mt-6 space-y-4 animate-reveal">
+                                <h3 className="text-sm font-black uppercase text-rose-500 tracking-widest mb-4">Información de Envío</h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-slate-400 ml-1">Calle</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            value={address.calle}
+                                            onChange={(e) => setAddress({ ...address, calle: e.target.value })}
+                                            className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-rose-500/50 transition-colors"
+                                            placeholder="Ej. Av. Siempre Viva"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-slate-400 ml-1">Número Int/Ext</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            value={address.numero}
+                                            onChange={(e) => setAddress({ ...address, numero: e.target.value })}
+                                            className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-rose-500/50 transition-colors"
+                                            placeholder="Ej. 742"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-slate-400 ml-1">Colonia</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            value={address.colonia}
+                                            onChange={(e) => setAddress({ ...address, colonia: e.target.value })}
+                                            className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-rose-500/50 transition-colors"
+                                            placeholder="Ej. Centro"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-slate-400 ml-1">Código Postal</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            value={address.cp}
+                                            onChange={(e) => setAddress({ ...address, cp: e.target.value })}
+                                            className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-rose-500/50 transition-colors"
+                                            placeholder="Ej. 12345"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-slate-400 ml-1">Ciudad/Municipio</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            value={address.ciudad}
+                                            onChange={(e) => setAddress({ ...address, ciudad: e.target.value })}
+                                            className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-rose-500/50 transition-colors"
+                                            placeholder="Ej. Los Reyes Acaquilpan"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-slate-400 ml-1">Estado</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            value={address.estado}
+                                            onChange={(e) => setAddress({ ...address, estado: e.target.value })}
+                                            className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-rose-500/50 transition-colors"
+                                            placeholder="Ej. Estado de México"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1 pt-2">
+                                    <label className="text-xs text-slate-400 ml-1">Referencias Adicionales</label>
+                                    <textarea
+                                        value={address.referencias}
+                                        onChange={(e) => setAddress({ ...address, referencias: e.target.value })}
+                                        className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-rose-500/50 transition-colors resize-none h-20"
+                                        placeholder="Ej. Casa blanca con portón negro, frente al parque."
+                                    ></textarea>
+                                </div>
+                            </div>
+                        )}
+
                         {/* 2. Método de Pago */}
                         <div className="space-y-4 pt-6 border-t border-white/5">
                             <h2 className="text-xl font-bold text-white tracking-tighter mb-4">2. Método de Pago</h2>
@@ -293,7 +390,7 @@ export default function CheckoutPage() {
                         </div>
                     </aside>
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     )
 } 
