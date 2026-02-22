@@ -22,6 +22,9 @@ export default function AdminDashboard() {
     const [searchTerm, setSearchTerm] = useState('')
     const [stockPrompt, setStockPrompt] = useState<{ branchId: string; productId: string; newValue: number; productTitle: string; currentValue: number } | null>(null)
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+    const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false)
+    const [newClientData, setNewClientData] = useState({ email: '', password: '', name: '', phone: '' })
+    const [isAddingClient, setIsAddingClient] = useState(false)
     const router = useRouter()
 
     const showNotification = (message: string, type: 'success' | 'error') => {
@@ -163,6 +166,37 @@ export default function AdminDashboard() {
             // Option to revert UI could go here, but fetchProducts would also fix it eventually.
         } else {
             showNotification(`Stock guardado: ${newStock} en ${branchId}`, 'success')
+        }
+    }
+
+    const handleCreateClient = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (isAddingClient) return
+        setIsAddingClient(true)
+
+        try {
+            const res = await fetch('/api/clients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newClientData)
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                showNotification(data.error || 'Error al crear cliente', 'error')
+            } else {
+                showNotification('Cliente registrado exitosamente', 'success')
+                setIsAddClientModalOpen(false)
+                setNewClientData({ email: '', password: '', name: '', phone: '' })
+                // Refresh clients list
+                const { data: updatedClients } = await supabase.from('profiles').select('*')
+                if (updatedClients) setClients(updatedClients)
+            }
+        } catch (err: any) {
+            showNotification('Error de conexión', 'error')
+        } finally {
+            setIsAddingClient(false)
         }
     }
 
@@ -518,6 +552,14 @@ export default function AdminDashboard() {
                                 <h1 className="text-4xl font-black text-white tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-500">Gestión de Audiencia</h1>
                                 <p className="text-slate-500 font-medium whitespace-pre">Segmentación de clientes y monitoreo de lealtad.</p>
                             </div>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => setIsAddClientModalOpen(true)}
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-2xl font-black shadow-xl shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2"
+                                >
+                                    <Plus className="w-5 h-5" /> Nuevo Cliente
+                                </button>
+                            </div>
                         </header>
 
                         {/* Customer Segments Stats */}
@@ -659,6 +701,75 @@ export default function AdminDashboard() {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Add Client Modal */}
+            {isAddClientModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsAddClientModalOpen(false)}></div>
+                    <form onSubmit={handleCreateClient} className="bg-[#0f172a] border border-white/10 p-8 rounded-[2rem] shadow-2xl z-10 max-w-sm w-full animate-reveal relative overflow-hidden">
+                        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500"></div>
+                        <h3 className="text-xl font-black text-white mb-2">Registrar Cliente</h3>
+                        <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+                            Crea una cuenta para tu cliente para fidelizarlo y sumarle puntos.
+                        </p>
+
+                        <div className="space-y-4 mb-8">
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Nombre Completo</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={newClientData.name}
+                                    onChange={e => setNewClientData({ ...newClientData, name: e.target.value })}
+                                    className="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                    placeholder="Ej. María López"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Correo Electrónico</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={newClientData.email}
+                                    onChange={e => setNewClientData({ ...newClientData, email: e.target.value })}
+                                    className="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                    placeholder="Ej. maria@ejemplo.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Contraseña (Provisional)</label>
+                                <input
+                                    type="text"
+                                    required
+                                    minLength={6}
+                                    value={newClientData.password}
+                                    onChange={e => setNewClientData({ ...newClientData, password: e.target.value })}
+                                    className="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                    placeholder="Al menos 6 caracteres"
+                                />
+                                <p className="text-[10px] text-slate-500 mt-2">Dile al cliente que inicie sesión con esta contraseña y podrá cambiarla después.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsAddClientModalOpen(false)}
+                                className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-300 hover:bg-white/5 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isAddingClient}
+                                className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-3 rounded-xl font-black transition-colors shadow-lg shadow-emerald-600/20"
+                            >
+                                {isAddingClient ? 'Creando...' : 'Crear Cuenta'}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             )}
 
