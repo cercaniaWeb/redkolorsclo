@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import {
     Trash2, Plus, RefreshCw, LogOut, LayoutDashboard,
     ShoppingBag, Search, ChevronRight, TrendingUp, Package, Users, MapPin,
-    AlertTriangle, Award, Calendar, ExternalLink, UserCheck
+    AlertTriangle, Award, Calendar, ExternalLink, UserCheck, Check, X
 } from 'lucide-react'
 import Logo from '../components/Logo'
 
@@ -20,6 +20,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true)
     const [role, setRole] = useState<string | null>(null)
     const [searchTerm, setSearchTerm] = useState('')
+    const [stockPrompt, setStockPrompt] = useState<{ branchId: string; productId: string; newValue: number; productTitle: string; currentValue: number } | null>(null)
     const router = useRouter()
 
     const fetchProducts = async () => {
@@ -121,6 +122,12 @@ export default function AdminDashboard() {
 
         await supabase.from('products').delete().eq('id', id)
         fetchProducts()
+    }
+
+    const confirmStockUpdate = (branchId: string, productId: string, newValue: number, productTitle: string, currentValue: number) => {
+        if (newValue !== currentValue && newValue >= 0) {
+            setStockPrompt({ branchId, productId, newValue, productTitle, currentValue })
+        }
     }
 
     const updateStockDirect = async (branchId: string, productId: string, newValue: number) => {
@@ -309,7 +316,7 @@ export default function AdminDashboard() {
                                                         <td key={branchId} className="p-6">
                                                             <div className="flex items-center justify-center gap-2 bg-black/20 rounded-2xl py-1.5 px-3 border border-white/5 w-max mx-auto">
                                                                 <button
-                                                                    onClick={() => updateStockDirect(branchId, p.id, getStock(branchId) - 1)}
+                                                                    onClick={() => confirmStockUpdate(branchId, p.id, getStock(branchId) - 1, p.title, getStock(branchId))}
                                                                     className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-800/80 hover:bg-rose-600 hover:text-white transition-all text-slate-400 font-black text-lg"
                                                                 >-</button>
                                                                 <input
@@ -318,11 +325,10 @@ export default function AdminDashboard() {
                                                                     defaultValue={getStock(branchId)}
                                                                     onBlur={(e) => {
                                                                         const val = parseInt(e.target.value);
-                                                                        if (!isNaN(val) && val !== getStock(branchId)) {
-                                                                            updateStockDirect(branchId, p.id, val);
-                                                                        } else {
-                                                                            e.target.value = getStock(branchId).toString();
+                                                                        if (!isNaN(val)) {
+                                                                            confirmStockUpdate(branchId, p.id, val, p.title, getStock(branchId));
                                                                         }
+                                                                        e.target.value = getStock(branchId).toString(); // Reset until confirmed, optimistic UI will update defaultValue
                                                                     }}
                                                                     onKeyDown={(e) => {
                                                                         if (e.key === 'Enter') {
@@ -332,7 +338,7 @@ export default function AdminDashboard() {
                                                                     className={`w-12 text-center text-sm font-black bg-transparent border-none outline-none ${getStock(branchId) > 0 ? 'text-white' : 'text-rose-500 opacity-70'} hide-arrows`}
                                                                 />
                                                                 <button
-                                                                    onClick={() => updateStockDirect(branchId, p.id, getStock(branchId) + 1)}
+                                                                    onClick={() => confirmStockUpdate(branchId, p.id, getStock(branchId) + 1, p.title, getStock(branchId))}
                                                                     className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-800/80 hover:bg-emerald-600 hover:text-white transition-all text-slate-400 font-black text-lg"
                                                                 >+</button>
                                                             </div>
@@ -597,6 +603,50 @@ export default function AdminDashboard() {
                     </div>
                 )}
             </main>
+
+            {/* Stock Confirmation Modal */}
+            {stockPrompt && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setStockPrompt(null)}></div>
+                    <div className="bg-[#0f172a] border border-white/10 p-8 rounded-[2rem] shadow-2xl z-10 max-w-sm w-full animate-reveal relative overflow-hidden">
+                        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-rose-500 via-rose-400 to-rose-500"></div>
+                        <h3 className="text-xl font-black text-white mb-2">Confirmar Actualización</h3>
+                        <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+                            ¿Deseas confirmar este cambio de inventario para <span className="font-bold text-white tracking-tight">{stockPrompt.productTitle}</span> en la sucursal <span className="font-bold text-rose-400 capitalize">{stockPrompt.branchId}</span>?
+                        </p>
+
+                        <div className="flex items-center justify-center gap-6 mb-8 bg-black/20 py-4 rounded-2xl border border-white/5">
+                            <div className="text-center">
+                                <span className="block text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">Actual</span>
+                                <span className="text-2xl font-black text-slate-400">{stockPrompt.currentValue}</span>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-slate-600" />
+                            <div className="text-center">
+                                <span className="block text-[10px] uppercase font-black tracking-widest text-emerald-500 mb-1">Nuevo</span>
+                                <span className="text-2xl font-black text-white px-3 py-1 bg-emerald-500/10 rounded-xl border border-emerald-500/20">{stockPrompt.newValue}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setStockPrompt(null)}
+                                className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-300 hover:bg-white/5 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={() => {
+                                    updateStockDirect(stockPrompt.branchId, stockPrompt.productId, stockPrompt.newValue)
+                                    setStockPrompt(null)
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-xl font-black transition-colors shadow-lg shadow-emerald-600/20"
+                            >
+                                <Check className="w-4 h-4" /> Guardar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
